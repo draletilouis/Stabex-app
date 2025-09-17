@@ -4,6 +4,8 @@ import com.demo.banking_app.dto.v2.*;
 import com.demo.banking_app.entity.Account;
 import com.demo.banking_app.service.AccountService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+import org.springframework.validation.annotation.Validated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
+@Validated
 public class AccountControllerV2 {
     
     private final AccountService accountService;
@@ -34,14 +37,15 @@ public class AccountControllerV2 {
     }
     
     @GetMapping("/{accountNumber}")
-    public ResponseEntity<AccountResponseV2> getAccountByAccountNumber(@PathVariable String accountNumber) {
+    public ResponseEntity<AccountResponseV2> getAccountByAccountNumber(
+            @PathVariable @Size(min = 10, max = 20, message = "Account number must be between 10 and 20 characters") String accountNumber) {
         log.info("Fetching account details (v2) for: {}", accountNumber);
         AccountResponseV2 response = convertToV2Response(accountService.getAccountByAccountNumber(accountNumber));
         return ResponseEntity.ok(response);
     }
     
     @GetMapping("/id/{id}")
-    public ResponseEntity<AccountResponseV2> getAccountById(@PathVariable Long id) {
+    public ResponseEntity<AccountResponseV2> getAccountById(@PathVariable @Positive(message = "ID must be positive") Long id) {
         log.info("Fetching account details (v2) for ID: {}", id);
         AccountResponseV2 response = convertToV2Response(accountService.getAccountById(id));
         return ResponseEntity.ok(response);
@@ -58,7 +62,7 @@ public class AccountControllerV2 {
     }
     
     @GetMapping("/search")
-    public ResponseEntity<List<AccountResponseV2>> searchAccounts(@RequestParam String name) {
+    public ResponseEntity<List<AccountResponseV2>> searchAccounts(@RequestParam @NotBlank(message = "Name is required") String name) {
         log.info("Searching accounts (v2) by holder name: {}", name);
         List<AccountResponseV2> responses = accountService.getAccountsByAccountHolderName(name)
             .stream()
@@ -82,7 +86,7 @@ public class AccountControllerV2 {
     }
     
     @DeleteMapping("/{accountNumber}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable String accountNumber) {
+    public ResponseEntity<Void> deleteAccount(@PathVariable @Size(min = 10, max = 20, message = "Account number must be between 10 and 20 characters") String accountNumber) {
         log.info("Deleting account (v2): {}", accountNumber);
         accountService.deleteAccount(accountNumber);
         return ResponseEntity.noContent().build();
@@ -90,8 +94,8 @@ public class AccountControllerV2 {
     
     @PutMapping("/{accountNumber}/status")
     public ResponseEntity<AccountResponseV2> updateAccountStatus(
-            @PathVariable String accountNumber,
-            @RequestParam Account.AccountStatus status) {
+            @PathVariable @Size(min = 10, max = 20, message = "Account number must be between 10 and 20 characters") String accountNumber,
+            @RequestParam @NotNull(message = "Status is required") Account.AccountStatus status) {
         log.info("Updating account {} status to {} (v2)", accountNumber, status);
         AccountResponseV2 response = convertToV2Response(accountService.updateAccountStatus(accountNumber, status));
         return ResponseEntity.ok(response);
