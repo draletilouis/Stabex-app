@@ -12,9 +12,10 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
     
-    Optional<Account> findByAccountNumber(String accountNumber);
+    Optional<Account> findByAccountNumberHash(String accountNumberHash);
     
-    Optional<Account> findByEmail(String email);
+    // Hash-based equality queries for encrypted fields
+    Optional<Account> findByEmailHash(String emailHash);
     
     List<Account> findByAccountHolderNameContainingIgnoreCase(String name);
     
@@ -22,10 +23,10 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     
     List<Account> findByStatus(Account.AccountStatus status);
     
-    @Query("SELECT a FROM Account a WHERE a.accountNumber = :accountNumber AND a.status = 'ACTIVE'")
-    Optional<Account> findActiveAccountByAccountNumber(@Param("accountNumber") String accountNumber);
+    @Query("SELECT a FROM Account a WHERE a.accountNumberHash = :accountNumberHash AND a.status = 'ACTIVE'")
+    Optional<Account> findActiveAccountByAccountNumber(@Param("accountNumberHash") String accountNumberHash);
     
-    boolean existsByAccountNumber(String accountNumber);
+    boolean existsByAccountNumberHash(String accountNumberHash);
     
-    boolean existsByEmail(String email);
+    boolean existsByEmailHash(String emailHash);
 }

@@ -4,6 +4,7 @@ import com.demo.banking_app.dto.*;
 import com.demo.banking_app.entity.Account;
 import com.demo.banking_app.exception.*;
 import com.demo.banking_app.repository.AccountRepository;
+import com.demo.banking_app.util.DeterministicHasher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,22 +23,26 @@ import java.util.stream.Collectors;
 public class AccountServiceImpl implements AccountService {
     
     private final AccountRepository accountRepository;
+    private final DeterministicHasher hasher;
     
     @Override
     public AccountResponse createAccount(CreateAccountRequest request) {
         log.info("Creating account for email: {}", request.getEmail());
         
-        // Check if account with email already exists
-        if (accountRepository.existsByEmail(request.getEmail())) {
+        // Check if account with email already exists (using hash)
+        String emailHash = hasher.hash(request.getEmail());
+        if (accountRepository.existsByEmailHash(emailHash)) {
             throw new AccountAlreadyExistsException("Account with email " + request.getEmail() + " already exists");
         }
         
-        // Generate unique account number
+        // Generate unique account number and its hash
         String accountNumber = generateAccountNumber();
+        String accountNumberHash = hasher.hash(accountNumber);
         
-        // Create new account
+        // Create new account (include hash at build time so it's present in INSERT)
         Account account = Account.builder()
                 .accountNumber(accountNumber)
+                .accountNumberHash(accountNumberHash)
                 .accountHolderName(request.getAccountHolderName())
                 .email(request.getEmail())
                 .phoneNumber(request.getPhoneNumber())
@@ -45,6 +50,12 @@ public class AccountServiceImpl implements AccountService {
                 .balance(BigDecimal.ZERO)
                 .status(Account.AccountStatus.ACTIVE)
                 .build();
+
+        // Set deterministic hashes for lookup
+        account.setEmailHash(emailHash);
+        account.setPhoneHash(hasher.hash(request.getPhoneNumber()));
+        // already set in builder
+        log.debug("Generated accountNumber={} accountNumberHash={} emailHash={} phoneHash={}", accountNumber, accountNumberHash, emailHash, account.getPhoneHash());
         
         Account savedAccount = accountRepository.save(account);
         log.info("Account created successfully with account number: {}", accountNumber);
@@ -56,7 +67,7 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse getAccountByAccountNumber(String accountNumber) {
         log.info("Fetching account details for account number: {}", accountNumber);
         
-        Account account = accountRepository.findActiveAccountByAccountNumber(accountNumber)
+        Account account = accountRepository.findActiveAccountByAccountNumber(hasher.hash(accountNumber))
                 .orElseThrow(() -> new AccountNotFoundException("Account with number " + accountNumber + " not found"));
         
         return mapToAccountResponse(account);
@@ -98,7 +109,7 @@ public class AccountServiceImpl implements AccountService {
         
         validateAmount(request.getAmount());
         
-        Account account = accountRepository.findActiveAccountByAccountNumber(request.getAccountNumber())
+        Account account = accountRepository.findActiveAccountByAccountNumber(hasher.hash(request.getAccountNumber()))
                 .orElseThrow(() -> new AccountNotFoundException("Account with number " + request.getAccountNumber() + " not found"));
         
         if (account.getStatus() != Account.AccountStatus.ACTIVE) {
@@ -127,7 +138,7 @@ public class AccountServiceImpl implements AccountService {
         
         validateAmount(request.getAmount());
         
-        Account account = accountRepository.findActiveAccountByAccountNumber(request.getAccountNumber())
+        Account account = accountRepository.findActiveAccountByAccountNumber(hasher.hash(request.getAccountNumber()))
                 .orElseThrow(() -> new AccountNotFoundException("Account with number " + request.getAccountNumber() + " not found"));
         
         if (account.getStatus() != Account.AccountStatus.ACTIVE) {
@@ -162,7 +173,7 @@ public class AccountServiceImpl implements AccountService {
     public void deleteAccount(String accountNumber) {
         log.info("Deleting account: {}", accountNumber);
         
-        Account account = accountRepository.findByAccountNumber(accountNumber)
+        Account account = accountRepository.findByAccountNumberHash(hasher.hash(accountNumber))
                 .orElseThrow(() -> new AccountNotFoundException("Account with number " + accountNumber + " not found"));
         
         if (account.getStatus() == Account.AccountStatus.INACTIVE) {
@@ -180,7 +191,7 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse updateAccountStatus(String accountNumber, Account.AccountStatus status) {
         log.info("Updating account {} status to {}", accountNumber, status);
         
-        Account account = accountRepository.findByAccountNumber(accountNumber)
+        Account account = accountRepository.findByAccountNumberHash(hasher.hash(accountNumber))
                 .orElseThrow(() -> new AccountNotFoundException("Account with number " + accountNumber + " not found"));
         
         account.setStatus(status);
@@ -191,10 +202,12 @@ public class AccountServiceImpl implements AccountService {
     
     private String generateAccountNumber() {
         String accountNumber;
+        String accountNumberHash;
         do {
             // Generate a 10-digit account number
             accountNumber = String.format("%010d", Math.abs(UUID.randomUUID().hashCode()) % 10000000000L);
-        } while (accountRepository.existsByAccountNumber(accountNumber));
+            accountNumberHash = hasher.hash(accountNumber);
+        } while (accountRepository.existsByAccountNumberHash(accountNumberHash));
         
         return accountNumber;
     }

@@ -1,105 +1,110 @@
 package com.demo.banking_app.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.MDC;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestControllerAdvice(basePackages = "com.demo.banking_app.controller")
 public class GlobalExceptionHandler {
-    
+
     @ExceptionHandler(AccountNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleAccountNotFoundException(AccountNotFoundException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Account Not Found")
-                .message(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    public ProblemDetail handleAccountNotFoundException(AccountNotFoundException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.NOT_FOUND, "Account Not Found", ex.getMessage(), "ACCOUNT_NOT_FOUND", request);
     }
-    
+
     @ExceptionHandler(InsufficientFundsException.class)
-    public ResponseEntity<ErrorResponse> handleInsufficientFundsException(InsufficientFundsException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Insufficient Funds")
-                .message(ex.getMessage())
-                .details(Map.of(
-                    "currentBalance", ex.getCurrentBalance(),
-                    "requestedAmount", ex.getRequestedAmount()
-                ))
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    public ProblemDetail handleInsufficientFundsException(InsufficientFundsException ex, HttpServletRequest request) {
+        ProblemDetail pd = createProblemDetail(HttpStatus.BAD_REQUEST, "Insufficient Funds", ex.getMessage(), "INSUFFICIENT_FUNDS", request);
+        pd.setProperty("currentBalance", ex.getCurrentBalance());
+        pd.setProperty("requestedAmount", ex.getRequestedAmount());
+        return pd;
     }
-    
+
     @ExceptionHandler(InvalidAmountException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidAmountException(InvalidAmountException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Invalid Amount")
-                .message(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    public ProblemDetail handleInvalidAmountException(InvalidAmountException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.BAD_REQUEST, "Invalid Amount", ex.getMessage(), "INVALID_AMOUNT", request);
     }
-    
+
     @ExceptionHandler(AccountAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleAccountAlreadyExistsException(AccountAlreadyExistsException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Account Already Exists")
-                .message(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
+    public ProblemDetail handleAccountAlreadyExistsException(AccountAlreadyExistsException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.CONFLICT, "Account Already Exists", ex.getMessage(), "ACCOUNT_ALREADY_EXISTS", request);
     }
-    
+
     @ExceptionHandler(InactiveAccountException.class)
-    public ResponseEntity<ErrorResponse> handleInactiveAccountException(InactiveAccountException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Inactive Account")
-                .message(ex.getMessage())
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    public ProblemDetail handleInactiveAccountException(InactiveAccountException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.BAD_REQUEST, "Inactive Account", ex.getMessage(), "INACTIVE_ACCOUNT", request);
     }
-    
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, Object> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Validation Failed")
-                .message("Invalid input data")
-                .details(errors)
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+
+        ProblemDetail pd = createProblemDetail(HttpStatus.BAD_REQUEST, "Validation Failed", "Invalid input data", "VALIDATION_FAILED", request);
+        pd.setProperty("errors", errors);
+        return pd;
     }
-    
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolationException(ConstraintViolationException ex, HttpServletRequest request) {
+        Map<String, Object> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(cv -> {
+            String path = cv.getPropertyPath() != null ? cv.getPropertyPath().toString() : "parameter";
+            errors.put(path, cv.getMessage());
+        });
+
+        ProblemDetail pd = createProblemDetail(HttpStatus.BAD_REQUEST, "Constraint Violation", "Invalid request parameters", "CONSTRAINT_VIOLATION", request);
+        pd.setProperty("errors", errors);
+        return pd;
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message("An unexpected error occurred")
-                .build();
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ProblemDetail handleGenericException(Exception ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred", "INTERNAL_SERVER_ERROR", request);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
+        String rootMessage = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        return createProblemDetail(HttpStatus.BAD_REQUEST, "Data Integrity Violation", rootMessage, "DATA_INTEGRITY_VIOLATION", request);
+    }
+
+    private ProblemDetail createProblemDetail(HttpStatus status, String title, String detail, String errorCode, HttpServletRequest request) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setTitle(title);
+        String requestPath = request.getRequestURI() != null ? request.getRequestURI() : "/";
+        problemDetail.setInstance(URI.create(requestPath));
+        problemDetail.setProperty("errorCode", errorCode);
+        problemDetail.setProperty("path", requestPath);
+        problemDetail.setProperty("traceId", resolveTraceId(request));
+        return problemDetail;
+    }
+
+    private String resolveTraceId(HttpServletRequest request) {
+        String mdcTraceId = MDC.get("traceId");
+        if (mdcTraceId != null && !mdcTraceId.isBlank()) {
+            return mdcTraceId;
+        }
+        String headerTraceId = request.getHeader("X-Request-Id");
+        if (headerTraceId != null && !headerTraceId.isBlank()) {
+            return headerTraceId;
+        }
+        return UUID.randomUUID().toString();
     }
 }
