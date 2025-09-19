@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.9'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.flywaydb.flyway' version '10.20.1'
 }
 
 group = 'com.demo'
@@ -43,4 +44,11 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+flyway {
+	url = 'jdbc:mysql://localhost:3306/banking_db'
+	user = 'root'
+	password = 'password'
+	locations = ['classpath:db/migration']
 }

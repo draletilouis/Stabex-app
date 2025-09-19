@@ -1,4 +1,7 @@
--- Create idempotency table for tracking duplicate requests
+-- Fix idempotency table by dropping and recreating it without foreign key constraint
+DROP TABLE IF EXISTS idempotency_keys;
+
+-- Recreate idempotency table without foreign key constraint
 CREATE TABLE idempotency_keys (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     idempotency_key VARCHAR(255) NOT NULL UNIQUE,
