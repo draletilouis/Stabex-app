@@ -1,6 +1,6 @@
 # Stabex Banking API
 
-Production-ready Spring Boot banking API with MySQL, request validation, application-layer encryption, and versioned endpoints (v1 & v2).
+Production-ready Spring Boot banking API with MySQL, request validation, application-layer encryption, versioned endpoints (v1 & v2), database constraints, optimistic locking, and idempotency support.
 
 ## Features
 
@@ -12,6 +12,10 @@ Production-ready Spring Boot banking API with MySQL, request validation, applica
 - ✅ Global exception handling with structured JSON errors
 - ✅ Application-layer encryption (AES-GCM) for PII and account numbers
 - ✅ Deterministic hashing (HMAC-SHA256) for secure equality lookups
+- ✅ **Database constraints via Flyway migrations**
+- ✅ **Optimistic locking with @Version for concurrent updates**
+- ✅ **Idempotency support for transfers/deposits**
+- ✅ **Automatic cleanup of expired idempotency keys**
 
 ## Prerequisites
 
@@ -32,7 +36,13 @@ spring.datasource.username=your_username
 spring.datasource.password=your_password
 ```
 
-3) Optional: Hibernate will auto-manage schema per your current JPA config. Use migrations in production.
+3) **Database migrations are managed by Flyway** - schema will be automatically created and versioned on startup.
+
+### Database Features
+- **Unique constraints** on email and account numbers via database indexes
+- **Optimistic locking** with version fields to prevent concurrent modification conflicts
+- **Idempotency tracking** to handle duplicate requests safely
+- **Automatic cleanup** of expired idempotency keys
 
 ## Running the Application
 
@@ -78,7 +88,8 @@ There are two versions: v1 (camelCase) and v2 (snake_case fields in responses an
 {
   "accountNumber": "1234567890",
   "amount": 100.00,
-  "description": "deposit"
+  "description": "deposit",
+  "idempotencyKey": "deposit-1234567890-2024-01-15-001"
 }
 ```
 - Withdraw (POST `/api/v1/accounts/withdraw`) – same body as deposit
@@ -110,7 +121,8 @@ There are two versions: v1 (camelCase) and v2 (snake_case fields in responses an
   "account_number": "1234567890",
   "amount": 75.0,
   "description": "deposit",
-  "reference": "REF-123"
+  "reference": "REF-123",
+  "idempotency_key": "deposit-1234567890-2024-01-15-001"
 }
 ```
 - Withdraw (POST `/api/v2/accounts/withdraw`) – same body shape as deposit
@@ -136,6 +148,8 @@ Bean Validation (annotations on DTOs/params) plus global handlers provide clear 
 - **InvalidAmountException**: When amount is zero or negative
 - **AccountAlreadyExistsException**: When trying to create duplicate account
 - **InactiveAccountException**: When performing operations on inactive account
+- **OptimisticLockingException**: When concurrent modification conflicts occur
+- **IdempotencyException**: When duplicate requests are detected
 - **Validation errors**: 400 with field/parameter messages
 - **Data integrity**: 409/400 with constraint details
 
@@ -165,6 +179,7 @@ Bean Validation (annotations on DTOs/params) plus global handlers provide clear 
     "amount": 1000.00,
     "newBalance": 1000.00,
     "description": "Initial deposit",
+    "idempotencyKey": "deposit-1234567890-2024-01-15-001",
     "timestamp": "2024-01-15T10:35:00"
 }
 ```
@@ -192,23 +207,86 @@ curl -X POST http://localhost:8081/api/v1/accounts \
   -d '{"accountHolderName":"John Doe","email":"john.doe@example.com","phoneNumber":"+1234567890","accountType":"SAVINGS"}'
 ```
 
+## Advanced Features
+
+### Database Migrations (Flyway)
+- **V1**: Creates accounts table with unique constraints and optimistic locking
+- **V2**: Creates idempotency tracking table
+- **V3**: Optional sample data (commented out)
+- Automatic schema versioning and validation on startup
+
+### Optimistic Locking
+- **@Version** field on Account entity prevents concurrent modification conflicts
+- Automatic retry mechanism through idempotency
+- HTTP 409 (Conflict) responses for concurrent modification attempts
+
+### Idempotency Support
+- **Required idempotency key** for all transaction requests
+- **Duplicate request detection** - returns cached response for completed operations
+- **Automatic cleanup** of expired idempotency keys (24-hour expiration)
+- **Scheduled maintenance** runs every hour to clean up expired records
+
+### Error Handling for Advanced Features
+```json
+// Optimistic Locking Failure
+{
+    "type": "about:blank",
+    "title": "Concurrent Modification",
+    "status": 409,
+    "detail": "Account was modified by another transaction. Please retry.",
+    "errorCode": "OPTIMISTIC_LOCKING_FAILURE"
+}
+
+// Idempotency Violation
+{
+    "type": "about:blank",
+    "title": "Idempotency Violation",
+    "status": 409,
+    "detail": "Previous request with this idempotency key failed: Insufficient funds",
+    "errorCode": "IDEMPOTENCY_VIOLATION"
+}
+```
+
 ## Architecture
 
 Layered design:
 
 - **Controller**: HTTP endpoints for v1/v2
-- **Service**: Business logic, hashing, validations
+- **Service**: Business logic, hashing, validations, idempotency handling
 - **Repository**: JPA access using secure hash lookups
-- **Entity/DTO**: Encrypted columns via JPA converters; versioned DTOs
+- **Entity/DTO**: Encrypted columns via JPA converters; versioned DTOs with idempotency
 - **Exception**: Global handler for validation/integrity errors
+- **Migration**: Flyway-managed database schema with constraints
+- **Scheduling**: Automatic cleanup of expired idempotency keys
 
 ## Security & Privacy
 
 - AES-GCM encryption at application layer for PII and account numbers
 - Deterministic HMAC-SHA256 for equality queries (no plaintext search)
+- **Database constraints** prevent duplicate accounts and data integrity violations
+- **Optimistic locking** prevents race conditions and concurrent modification conflicts
+- **Idempotency** ensures safe handling of duplicate requests
 - Set keys via environment in production (do not commit secrets)
 - Consider: authn/z, rate limiting, audit logging, secret rotation
 
+## Testing Advanced Features
+
+### Testing Idempotency
+```bash
+# First request
+curl -X POST http://localhost:8081/api/v1/accounts/deposit \
+  -H "Content-Type: application/json" \
+  -d '{"accountNumber":"1234567890","amount":100.00,"description":"test","idempotencyKey":"test-key-001"}'
+
+# Duplicate request (should return same response)
+curl -X POST http://localhost:8081/api/v1/accounts/deposit \
+  -H "Content-Type: application/json" \
+  -d '{"accountNumber":"1234567890","amount":100.00,"description":"test","idempotencyKey":"test-key-001"}'
+```
+
+### Testing Concurrent Access
+Send multiple simultaneous requests to the same account to test optimistic locking behavior.
+
 ---
 
-Made with Spring Boot 3, Hibernate 6, MySQL 8.
+Made with Spring Boot 3, Hibernate 6, MySQL 8, Flyway, and enterprise-grade concurrency controls.
