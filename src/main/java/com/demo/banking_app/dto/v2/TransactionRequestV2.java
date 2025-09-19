@@ -51,4 +51,9 @@ public class TransactionRequestV2 {
     @JsonProperty("external_reference")
     @Size(max = 50, message = "External reference cannot exceed 50 characters")
     private String externalReference;
+    
+    @JsonProperty("idempotency_key")
+    @NotBlank(message = "Idempotency key is required")
+    @Size(max = 255, message = "Idempotency key cannot exceed 255 characters")
+    private String idempotencyKey;
 }

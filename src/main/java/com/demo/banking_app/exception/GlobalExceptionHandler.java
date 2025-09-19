@@ -47,6 +47,16 @@ public class GlobalExceptionHandler {
         return createProblemDetail(HttpStatus.BAD_REQUEST, "Inactive Account", ex.getMessage(), "INACTIVE_ACCOUNT", request);
     }
 
+    @ExceptionHandler(OptimisticLockingException.class)
+    public ProblemDetail handleOptimisticLockingException(OptimisticLockingException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.CONFLICT, "Concurrent Modification", ex.getMessage(), "OPTIMISTIC_LOCKING_FAILURE", request);
+    }
+
+    @ExceptionHandler(IdempotencyException.class)
+    public ProblemDetail handleIdempotencyException(IdempotencyException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.CONFLICT, "Idempotency Violation", ex.getMessage(), "IDEMPOTENCY_VIOLATION", request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, Object> errors = new HashMap<>();

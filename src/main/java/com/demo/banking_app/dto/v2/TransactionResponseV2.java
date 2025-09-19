@@ -66,4 +66,7 @@ public class TransactionResponseV2 {
     
     @JsonProperty("processed_by")
     private String processedBy;
+    
+    @JsonProperty("idempotency_key")
+    private String idempotencyKey;
 }

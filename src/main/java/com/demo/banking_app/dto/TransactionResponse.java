@@ -19,5 +19,6 @@ public class TransactionResponse {
     private BigDecimal amount;
     private BigDecimal newBalance;
     private String description;
+    private String idempotencyKey;
     private LocalDateTime timestamp;
 }

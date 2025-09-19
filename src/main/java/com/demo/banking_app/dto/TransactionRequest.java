@@ -18,4 +18,7 @@ public class TransactionRequest {
     private BigDecimal amount;
     
     private String description;
+    
+    @NotBlank(message = "Idempotency key is required")
+    private String idempotencyKey;
 }

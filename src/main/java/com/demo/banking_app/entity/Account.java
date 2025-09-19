@@ -71,6 +71,11 @@ public class Account {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    @Version
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+    
     public enum AccountType {
         SAVINGS, CHECKING, BUSINESS
     }
