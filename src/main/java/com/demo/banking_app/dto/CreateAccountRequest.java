@@ -1,6 +1,6 @@
 package com.demo.banking_app.dto;
 
-import com.demo.banking_app.entity.Account;
+import com.demo.banking_app.domain.model.AccountType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,5 +19,5 @@ public class CreateAccountRequest {
     private String phoneNumber;
     
     @NotNull(message = "Account type is required")
-    private Account.AccountType accountType;
+    private AccountType accountType;
 }

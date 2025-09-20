@@ -1,6 +1,6 @@
 package com.demo.banking_app.dto.v2;
 
-import com.demo.banking_app.entity.Account;
+import com.demo.banking_app.domain.model.AccountType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -37,7 +37,7 @@ public class CreateAccountRequestV2 {
     
     @JsonProperty("account_type")
     @NotNull(message = "Account type is required")
-    private Account.AccountType accountType;
+    private AccountType accountType;
     
     // V2 specific fields
     @JsonProperty("account_holder_id")

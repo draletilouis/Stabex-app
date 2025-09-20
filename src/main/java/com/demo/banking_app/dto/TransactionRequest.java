@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Data
 public class TransactionRequest {
     
-    @NotBlank(message = "Account number is required")
+    // Account number is provided via path variable, not request body
     private String accountNumber;
     
     @NotNull(message = "Amount is required")

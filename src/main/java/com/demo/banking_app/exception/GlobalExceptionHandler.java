@@ -16,44 +16,39 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@RestControllerAdvice(basePackages = "com.demo.banking_app.controller")
+@RestControllerAdvice(basePackages = {"com.demo.banking_app.infrastructure.web"})
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(AccountNotFoundException.class)
-    public ProblemDetail handleAccountNotFoundException(AccountNotFoundException ex, HttpServletRequest request) {
+    @ExceptionHandler(com.demo.banking_app.domain.exception.AccountNotFoundException.class)
+    public ProblemDetail handleDomainAccountNotFoundException(com.demo.banking_app.domain.exception.AccountNotFoundException ex, HttpServletRequest request) {
         return createProblemDetail(HttpStatus.NOT_FOUND, "Account Not Found", ex.getMessage(), "ACCOUNT_NOT_FOUND", request);
     }
 
-    @ExceptionHandler(InsufficientFundsException.class)
-    public ProblemDetail handleInsufficientFundsException(InsufficientFundsException ex, HttpServletRequest request) {
+    @ExceptionHandler(com.demo.banking_app.domain.exception.InsufficientFundsException.class)
+    public ProblemDetail handleDomainInsufficientFundsException(com.demo.banking_app.domain.exception.InsufficientFundsException ex, HttpServletRequest request) {
         ProblemDetail pd = createProblemDetail(HttpStatus.BAD_REQUEST, "Insufficient Funds", ex.getMessage(), "INSUFFICIENT_FUNDS", request);
-        pd.setProperty("currentBalance", ex.getCurrentBalance());
-        pd.setProperty("requestedAmount", ex.getRequestedAmount());
+        pd.setProperty("currentBalance", ex.getCurrentBalance().getAmount());
+        pd.setProperty("requestedAmount", ex.getRequestedAmount().getAmount());
         return pd;
     }
 
-    @ExceptionHandler(InvalidAmountException.class)
-    public ProblemDetail handleInvalidAmountException(InvalidAmountException ex, HttpServletRequest request) {
-        return createProblemDetail(HttpStatus.BAD_REQUEST, "Invalid Amount", ex.getMessage(), "INVALID_AMOUNT", request);
-    }
-
-    @ExceptionHandler(AccountAlreadyExistsException.class)
-    public ProblemDetail handleAccountAlreadyExistsException(AccountAlreadyExistsException ex, HttpServletRequest request) {
+    @ExceptionHandler(com.demo.banking_app.domain.exception.AccountAlreadyExistsException.class)
+    public ProblemDetail handleDomainAccountAlreadyExistsException(com.demo.banking_app.domain.exception.AccountAlreadyExistsException ex, HttpServletRequest request) {
         return createProblemDetail(HttpStatus.CONFLICT, "Account Already Exists", ex.getMessage(), "ACCOUNT_ALREADY_EXISTS", request);
     }
 
-    @ExceptionHandler(InactiveAccountException.class)
-    public ProblemDetail handleInactiveAccountException(InactiveAccountException ex, HttpServletRequest request) {
+    @ExceptionHandler(com.demo.banking_app.domain.exception.InactiveAccountException.class)
+    public ProblemDetail handleDomainInactiveAccountException(com.demo.banking_app.domain.exception.InactiveAccountException ex, HttpServletRequest request) {
         return createProblemDetail(HttpStatus.BAD_REQUEST, "Inactive Account", ex.getMessage(), "INACTIVE_ACCOUNT", request);
     }
 
-    @ExceptionHandler(OptimisticLockingException.class)
-    public ProblemDetail handleOptimisticLockingException(OptimisticLockingException ex, HttpServletRequest request) {
-        return createProblemDetail(HttpStatus.CONFLICT, "Concurrent Modification", ex.getMessage(), "OPTIMISTIC_LOCKING_FAILURE", request);
+    @ExceptionHandler(com.demo.banking_app.domain.exception.ConcurrentModificationException.class)
+    public ProblemDetail handleDomainConcurrentModificationException(com.demo.banking_app.domain.exception.ConcurrentModificationException ex, HttpServletRequest request) {
+        return createProblemDetail(HttpStatus.CONFLICT, "Concurrent Modification", ex.getMessage(), "CONCURRENT_MODIFICATION", request);
     }
 
-    @ExceptionHandler(IdempotencyException.class)
-    public ProblemDetail handleIdempotencyException(IdempotencyException ex, HttpServletRequest request) {
+    @ExceptionHandler(com.demo.banking_app.domain.exception.IdempotencyException.class)
+    public ProblemDetail handleDomainIdempotencyException(com.demo.banking_app.domain.exception.IdempotencyException ex, HttpServletRequest request) {
         return createProblemDetail(HttpStatus.CONFLICT, "Idempotency Violation", ex.getMessage(), "IDEMPOTENCY_VIOLATION", request);
     }
 

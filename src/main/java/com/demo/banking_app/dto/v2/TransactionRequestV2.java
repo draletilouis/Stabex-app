@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 public class TransactionRequestV2 {
     
     @JsonProperty("account_number")
-    @NotBlank(message = "Account number is required")
+    // Account number is provided via path variable, not request body
     @Size(min = 10, max = 20, message = "Account number must be between 10 and 20 characters")
     private String accountNumber;
     

@@ -1,6 +1,7 @@
 package com.demo.banking_app.dto;
 
-import com.demo.banking_app.entity.Account;
+import com.demo.banking_app.domain.model.AccountType;
+import com.demo.banking_app.domain.model.AccountStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +22,8 @@ public class AccountResponse {
     private String email;
     private String phoneNumber;
     private BigDecimal balance;
-    private Account.AccountType accountType;
-    private Account.AccountStatus status;
+    private AccountType accountType;
+    private AccountStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

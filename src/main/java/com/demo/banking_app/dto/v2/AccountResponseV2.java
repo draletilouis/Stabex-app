@@ -1,6 +1,7 @@
 package com.demo.banking_app.dto.v2;
 
-import com.demo.banking_app.entity.Account;
+import com.demo.banking_app.domain.model.AccountType;
+import com.demo.banking_app.domain.model.AccountStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -40,10 +41,10 @@ public class AccountResponseV2 {
     private BigDecimal balance;
     
     @JsonProperty("account_type")
-    private Account.AccountType accountType;
+    private AccountType accountType;
     
     @JsonProperty("status")
-    private Account.AccountStatus status;
+    private AccountStatus status;
     
     @JsonProperty("created_at")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
