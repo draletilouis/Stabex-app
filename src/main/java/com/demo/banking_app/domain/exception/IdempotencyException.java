@@ -11,3 +11,4 @@ public class IdempotencyException extends DomainException {
     }
 }
 
+

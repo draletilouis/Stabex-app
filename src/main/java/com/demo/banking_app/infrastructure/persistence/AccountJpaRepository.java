@@ -30,3 +30,4 @@ public interface AccountJpaRepository extends JpaRepository<AccountEntity, Long>
     boolean existsByAccountNumberHash(@Param("hash") String hash);
 }
 
+

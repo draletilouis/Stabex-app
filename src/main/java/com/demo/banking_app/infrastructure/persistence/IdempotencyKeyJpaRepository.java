@@ -22,3 +22,4 @@ public interface IdempotencyKeyJpaRepository extends JpaRepository<IdempotencyKe
     Optional<IdempotencyKeyEntity> findValidByIdempotencyKey(@Param("key") String idempotencyKey, @Param("now") LocalDateTime now);
 }
 
+
