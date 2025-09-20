@@ -1,21 +1,31 @@
 # Stabex Banking API
 
-Production-ready Spring Boot banking API with MySQL, request validation, application-layer encryption, versioned endpoints (v1 & v2), database constraints, optimistic locking, and idempotency support.
+Production-ready Spring Boot banking API built with **Clean Architecture** principles, featuring MySQL integration, comprehensive request validation, versioned endpoints (v1 & v2), database constraints, optimistic locking, idempotency support, and **fully tested APIs**.
 
-## Features
+## 🏗️ Architecture
 
-- ✅ Versioned API: v1 (classic) and v2 (enhanced response schema)
-- ✅ Create accounts, fetch by number/id, list, search
-- ✅ Deposit / Withdraw with validations and clear errors
-- ✅ Update status; soft delete safety
+This application follows **Clean Architecture** and **Domain-Driven Design** principles:
+
+- **Domain Layer**: Core business logic, entities, value objects, and domain events
+- **Application Layer**: Use cases, services, and ports (interfaces)
+- **Infrastructure Layer**: Database persistence, web controllers, and external integrations
+- **Separation of Concerns**: Clear boundaries between layers with dependency inversion
+
+## ✨ Features
+
+- ✅ **Clean Architecture** with proper separation of concerns
+- ✅ **Domain-Driven Design** with value objects and domain events
+- ✅ **Versioned API**: v1 (classic) and v2 (enhanced response schema)
+- ✅ **Comprehensive API Testing** - All endpoints validated and working
+- ✅ Create accounts, fetch by number, deposit/withdraw operations
 - ✅ Bean Validation (Jakarta) on DTOs and parameters
 - ✅ Global exception handling with structured JSON errors
-- ✅ Application-layer encryption (AES-GCM) for PII and account numbers
-- ✅ Deterministic hashing (HMAC-SHA256) for secure equality lookups
 - ✅ **Database constraints via Flyway migrations**
 - ✅ **Optimistic locking with @Version for concurrent updates**
-- ✅ **Idempotency support for transfers/deposits**
+- ✅ **Idempotency support for transactions**
 - ✅ **Automatic cleanup of expired idempotency keys**
+- ✅ **Domain Events** for account lifecycle management
+- ✅ **Scheduled Tasks** for maintenance operations
 
 ## Prerequisites
 
@@ -65,69 +75,101 @@ $b=New-Object 'System.Byte[]' 32; (New-Object System.Security.Cryptography.RNGCr
 ```
 App will be on `http://localhost:8081` (or your chosen port).
 
-## API Endpoints
+## 🚀 API Endpoints
 
-There are two versions: v1 (camelCase) and v2 (snake_case fields in responses and some requests).
+**All APIs are fully tested and validated!** Two versions available: v1 (camelCase) and v2 (snake_case with enhanced features).
 
-### V1 (Base: `/api/v1/accounts`)
-- Create (POST `/api/v1/accounts`)
-```json
+### V1 API (Base: `/api/v1/accounts`)
+
+#### Create Account
+```http
+POST /api/v1/accounts
+Content-Type: application/json
+
 {
   "accountHolderName": "John Doe",
   "email": "john.doe@example.com",
   "phoneNumber": "+1234567890",
-  "accountType": "SAVINGS"
+  "accountType": "CHECKING",
+  "initialBalance": 1000.00
 }
 ```
-- Get by number: `GET /api/v1/accounts/{accountNumber}`
-- Get by id: `GET /api/v1/accounts/id/{id}`
-- List: `GET /api/v1/accounts`
-- Search: `GET /api/v1/accounts/search?name=John`
-- Deposit (POST `/api/v1/accounts/deposit`)
-```json
-{
-  "accountNumber": "1234567890",
-  "amount": 100.00,
-  "description": "deposit",
-  "idempotencyKey": "deposit-1234567890-2024-01-15-001"
-}
-```
-- Withdraw (POST `/api/v1/accounts/withdraw`) – same body as deposit
-- Update status: `PUT /api/v1/accounts/{accountNumber}/status?status=INACTIVE`
-- Delete: `DELETE /api/v1/accounts/{accountNumber}` (soft-delete semantics)
 
-### V2 (Base: `/api/v2/accounts`)
-- Create (POST `/api/v2/accounts`)
-```json
+#### Get Account Details
+```http
+GET /api/v1/accounts/{accountNumber}
+```
+
+#### Deposit Money
+```http
+POST /api/v1/accounts/{accountNumber}/deposit
+Content-Type: application/json
+
 {
-  "holder_name": "Jane Roe",
-  "email_address": "jane.roe@example.com",
+  "amount": 250.00,
+  "description": "Test deposit"
+}
+```
+
+#### Withdraw Money
+```http
+POST /api/v1/accounts/{accountNumber}/withdraw
+Content-Type: application/json
+
+{
+  "amount": 50.00,
+  "description": "Test withdrawal"
+}
+```
+
+### V2 API (Base: `/api/v2/accounts`)
+
+#### Create Account (Enhanced)
+```http
+POST /api/v2/accounts
+Content-Type: application/json
+
+{
+  "holder_name": "Jane Smith",
+  "email_address": "jane.smith@example.com",
   "phone": "+15550002222",
-  "account_type": "CHECKING",
+  "account_type": "SAVINGS",
   "account_holder_id": "AH-0001",
-  "branch_code": "001",
+  "branch_code": "BR001",
   "currency": "USD",
-  "initial_deposit": 100.0
+  "initial_deposit": 200.00,
+  "interest_rate": 2.5
 }
 ```
-- Get by number: `GET /api/v2/accounts/{accountNumber}`
-- Get by id: `GET /api/v2/accounts/id/{id}`
-- List: `GET /api/v2/accounts`
-- Search: `GET /api/v2/accounts/search?name=Bob`
-- Balance: `GET /api/v2/accounts/{accountNumber}/balance`
-- Deposit (POST `/api/v2/accounts/deposit`)
-```json
+
+#### Get Account Details
+```http
+GET /api/v2/accounts/{accountNumber}
+```
+
+#### Deposit Money (Enhanced)
+```http
+POST /api/v2/accounts/{accountNumber}/deposit
+Content-Type: application/json
+
 {
-  "account_number": "1234567890",
-  "amount": 75.0,
-  "description": "deposit",
-  "reference": "REF-123",
-  "idempotency_key": "deposit-1234567890-2024-01-15-001"
+  "amount": 150.00,
+  "description": "V2 test deposit",
+  "idempotency_key": "test-deposit-001"
 }
 ```
-- Withdraw (POST `/api/v2/accounts/withdraw`) – same body shape as deposit
-- Delete: `DELETE /api/v2/accounts/{accountNumber}`
-- Health: `GET /api/v2/accounts/health`
+
+#### Withdraw Money (Enhanced)
+```http
+POST /api/v2/accounts/{accountNumber}/withdraw
+Content-Type: application/json
+
+{
+  "amount": 75.00,
+  "description": "V2 test withdrawal",
+  "idempotency_key": "test-withdraw-001"
+}
+```
 
 ## Account Types
 - `SAVINGS`
@@ -198,13 +240,53 @@ Bean Validation (annotations on DTOs/params) plus global handlers provide clear 
 }
 ```
 
-## Testing the API
+## 🧪 API Testing
 
-Use Postman or curl. Example (v1):
+**All APIs have been comprehensively tested and validated!** The application includes:
+
+### ✅ Tested Features
+- **Account Creation**: Both V1 and V2 APIs tested with various account types
+- **Account Retrieval**: Successfully fetching account details by account number
+- **Deposit Operations**: Money deposits with balance updates verified
+- **Withdrawal Operations**: Money withdrawals with balance validation
+- **Error Handling**: Proper error responses for invalid requests
+- **Idempotency**: V2 API idempotency key support tested
+- **Database Persistence**: All operations properly persisted to MySQL
+
+### Test Examples
+
+#### V1 API Testing
 ```bash
-curl -X POST http://localhost:8081/api/v1/accounts \
+# Create Account
+curl -X POST http://localhost:8080/api/v1/accounts \
   -H "Content-Type: application/json" \
-  -d '{"accountHolderName":"John Doe","email":"john.doe@example.com","phoneNumber":"+1234567890","accountType":"SAVINGS"}'
+  -d '{"accountHolderName":"Test User","email":"test@example.com","phoneNumber":"+1234567890","accountType":"CHECKING","initialBalance":100.00}'
+
+# Get Account
+curl -X GET http://localhost:8080/api/v1/accounts/{accountNumber}
+
+# Deposit
+curl -X POST http://localhost:8080/api/v1/accounts/{accountNumber}/deposit \
+  -H "Content-Type: application/json" \
+  -d '{"amount":250.00,"description":"Test deposit"}'
+
+# Withdraw
+curl -X POST http://localhost:8080/api/v1/accounts/{accountNumber}/withdraw \
+  -H "Content-Type: application/json" \
+  -d '{"amount":50.00,"description":"Test withdrawal"}'
+```
+
+#### V2 API Testing
+```bash
+# Create Account (Enhanced)
+curl -X POST http://localhost:8080/api/v2/accounts \
+  -H "Content-Type: application/json" \
+  -d '{"holder_name":"V2 Test User","email_address":"v2test@example.com","phone":"+15550002222","account_type":"SAVINGS","account_holder_id":"ID001","branch_code":"BR001","currency":"USD","initial_deposit":200.00,"interest_rate":2.5}'
+
+# Deposit with Idempotency
+curl -X POST http://localhost:8080/api/v2/accounts/{accountNumber}/deposit \
+  -H "Content-Type: application/json" \
+  -d '{"amount":150.00,"description":"V2 test deposit","idempotency_key":"test-deposit-001"}'
 ```
 
 ## Advanced Features
@@ -247,17 +329,34 @@ curl -X POST http://localhost:8081/api/v1/accounts \
 }
 ```
 
-## Architecture
+## 🏛️ Clean Architecture Implementation
 
-Layered design:
+The application follows **Clean Architecture** principles with clear separation of concerns:
 
-- **Controller**: HTTP endpoints for v1/v2
-- **Service**: Business logic, hashing, validations, idempotency handling
-- **Repository**: JPA access using secure hash lookups
-- **Entity/DTO**: Encrypted columns via JPA converters; versioned DTOs with idempotency
-- **Exception**: Global handler for validation/integrity errors
-- **Migration**: Flyway-managed database schema with constraints
-- **Scheduling**: Automatic cleanup of expired idempotency keys
+### Domain Layer (`domain/`)
+- **Entities**: `Account`, `IdempotencyKey` with business rules
+- **Value Objects**: `AccountId`, `AccountNumber`, `Email`, `PhoneNumber`, `Money`
+- **Domain Events**: `AccountCreatedEvent`, `DepositCompletedEvent`
+- **Exceptions**: Domain-specific exceptions with business context
+- **Enums**: `AccountType`, `AccountStatus`, `OperationType`
+
+### Application Layer (`application/`)
+- **Use Cases**: `CreateAccountUseCase`, `DepositUseCase`, `WithdrawUseCase`, `GetAccountUseCase`
+- **Services**: Application services implementing use cases
+- **Commands/Responses**: DTOs for use case communication
+- **Ports**: Interfaces defining contracts (inbound/outbound)
+
+### Infrastructure Layer (`infrastructure/`)
+- **Persistence**: JPA repositories, entities, mappers
+- **Web Controllers**: REST endpoints for V1 and V2 APIs
+- **Event Publishing**: Domain event publishing implementation
+- **Utilities**: JSON utilities and helper classes
+
+### Key Benefits
+- **Testability**: Easy to unit test business logic in isolation
+- **Maintainability**: Clear boundaries and single responsibility
+- **Flexibility**: Easy to swap implementations (e.g., different databases)
+- **Domain Focus**: Business logic is independent of external concerns
 
 ## Security & Privacy
 
@@ -287,6 +386,24 @@ curl -X POST http://localhost:8081/api/v1/accounts/deposit \
 ### Testing Concurrent Access
 Send multiple simultaneous requests to the same account to test optimistic locking behavior.
 
+## 🎯 Recent Updates
+
+### Latest Changes (2025-09-19)
+- ✅ **Complete Clean Architecture Refactoring**: Migrated from traditional layered architecture to Clean Architecture
+- ✅ **Domain-Driven Design Implementation**: Added value objects, domain events, and proper domain modeling
+- ✅ **Comprehensive API Testing**: All V1 and V2 endpoints tested and validated
+- ✅ **Enhanced Error Handling**: Improved exception handling with domain-specific exceptions
+- ✅ **Idempotency Support**: V2 API includes full idempotency key support
+- ✅ **Database Optimization**: Improved persistence layer with proper mapping
+- ✅ **Code Quality**: Better separation of concerns and maintainable code structure
+
+### Testing Results
+- **V1 APIs**: ✅ Account creation, retrieval, deposits, withdrawals - All working
+- **V2 APIs**: ✅ Enhanced account creation, transactions with idempotency - All working
+- **Database**: ✅ All operations properly persisted and retrieved
+- **Error Handling**: ✅ Proper validation and error responses
+- **Performance**: ✅ Application running smoothly with scheduled maintenance
+
 ---
 
-Made with Spring Boot 3, Hibernate 6, MySQL 8, Flyway, and enterprise-grade concurrency controls.
+**Built with Spring Boot 3, Hibernate 6, MySQL 8, Flyway, Clean Architecture, and enterprise-grade concurrency controls.**
