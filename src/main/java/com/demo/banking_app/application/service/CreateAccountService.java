@@ -6,7 +6,6 @@ import com.demo.banking_app.application.port.out.EventPublisher;
 import com.demo.banking_app.domain.exception.AccountAlreadyExistsException;
 import com.demo.banking_app.domain.model.Account;
 import com.demo.banking_app.domain.model.AccountCreatedEvent;
-import com.demo.banking_app.domain.model.AccountId;
 import com.demo.banking_app.domain.model.AccountNumber;
 import com.demo.banking_app.domain.model.AccountStatus;
 import com.demo.banking_app.domain.model.Money;

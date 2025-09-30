@@ -3,8 +3,6 @@ package com.demo.banking_app.infrastructure.persistence;
 import com.demo.banking_app.domain.model.*;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
 @Component
 public class AccountMapper {
     
